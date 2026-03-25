@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jeu de Couple</title>
+<style>
+:root{--bg:#fff7fb;--card:#ffffff;--line:#f0d9e6;--text:#2d1831;--muted:#7a667c;--accent:#d14d8b;--accent2:#8f4de3;}
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#fff2f8,#fff);color:var(--text)}
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 28px}
+.hero,.panel,.drawn,.history-item{background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:24px;box-shadow:0 10px 25px rgba(209,77,139,.07)}
+.hero{padding:18px 18px 14px;margin-bottom:14px}.title{font-size:30px;font-weight:800;letter-spacing:-.03em;margin:6px 0 4px}.sub{color:var(--muted);font-size:14px;line-height:1.45}
+.row{display:grid;gap:12px}.row2{grid-template-columns:1fr 1fr}.panel{padding:16px;margin-bottom:14px}.label{font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700}
+input,select,button,textarea{font:inherit} input,textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff}
+textarea{min-height:80px;resize:vertical}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}.btn{border:0;border-radius:16px;padding:12px 14px;font-weight:800;cursor:pointer}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}.btn.soft{background:#f8e8f1;color:var(--text)}.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--text)}
+.badge{display:inline-flex;align-items:center;padding:7px 11px;border-radius:999px;background:#f8e8f1;color:#7c3562;font-size:12px;font-weight:800}
+.turn{font-weight:800}.drawn{padding:18px;margin-top:12px}.action{font-size:34px;line-height:1.12;font-weight:900;letter-spacing:-.03em;margin:10px 0 6px}.small{font-size:13px;color:var(--muted)}
+.list{display:grid;gap:8px;max-height:280px;overflow:auto;padding-right:4px}.cardline{display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:16px;padding:11px 12px;background:#fff}
+.cardline .txt{flex:1;font-size:14px}.mini{padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:700;cursor:pointer}
+.history{display:grid;gap:10px;max-height:360px;overflow:auto;padding-right:4px}.history-item{padding:14px}.muted{color:var(--muted)}
+.flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.space{justify-content:space-between}.hidden{display:none}.seg{display:inline-flex;padding:4px;border:1px solid var(--line);border-radius:16px;background:#fff;gap:4px}.seg button{border:0;background:transparent;padding:9px 12px;border-radius:12px;font-weight:800;color:var(--muted)}.seg button.active{background:#f8e8f1;color:var(--text)}
+.footer{padding-top:6px;text-align:center;color:var(--muted);font-size:12px}
+@media (max-width:640px){.row2{grid-template-columns:1fr}.title{font-size:26px}.action{font-size:28px}}
+</style>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c2185b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="badge">Application hors ligne</div>
+    <div class="title">Jeu de Couple</div>
+    <div class="sub">Chacun pioche à son tour. La personne qui pioche <strong>reçoit</strong> l’attention inscrite sur la carte, et l’autre doit l’offrir.</div>
+  </div>
+
+  <div class="panel">
+    <div class="row row2">
+      <div>
+        <div class="label">Joueur 1</div>
+        <input id="playerA" placeholder="Toi">
+      </div>
+      <div>
+        <div class="label">Joueur 2</div>
+        <input id="playerB" placeholder="Partenaire">
+      </div>
+    </div>
+    <div class="controls flex space" style="margin-top:12px">
+      <div class="seg" aria-label="Mode">
+        <button id="modeTender" class="active">Tendre</button>
+        <button id="modeSpicy">Pimenté</button>
+      </div>
+      <div class="badge" id="turnBadge">Tour : Toi</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Tour actuel</div>
+    <div class="sub"><span class="turn" id="currentPlayer">Toi</span> pioche. <span class="turn" id="partnerPlayer">Partenaire</span> offre l’attention.</div>
+    <div class="controls">
+      <button class="btn primary" id="drawBtn">Piocher une carte</button>
+      <button class="btn soft" id="nextBtn">Tour suivant</button>
+      <button class="btn ghost" id="resetBtn">Réinitialiser</button>
+    </div>
+    <div id="drawnEmpty" class="drawn">
+      <div class="small">Aucune carte tirée pour l’instant.</div>
+    </div>
+    <div id="drawnCard" class="drawn hidden">
+      <div class="flex space">
+        <div class="badge" id="drawnTime"></div>
+        <div class="badge" id="drawnStatus">À faire</div>
+      </div>
+      <div class="small" style="margin-top:10px"><span id="receiverName">Toi</span> reçoit :</div>
+      <div class="action" id="drawnAction">Massage des pieds</div>
+      <div class="sub"><span id="giverName">Partenaire</span> doit offrir cette attention à <span id="receiverName2">Toi</span>.</div>
+      <div class="controls"><button class="btn primary" id="doneBtn">Marquer comme réalisé</button></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Ajouter vos propres cartes</div>
+    <div class="sub">Exemples : « Massage des pieds », « Petit-déjeuner au lit », « Choisis le film ».</div>
+    <div class="controls" style="margin-top:12px">
+      <input id="newCardInput" placeholder="Écris une nouvelle carte">
+      <button class="btn primary" id="addCardBtn">Ajouter</button>
+    </div>
+    <div class="list" id="cardList" style="margin-top:12px"></div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Historique</div>
+    <div class="history" id="historyList"></div>
+  </div>
+
+  <div class="footer">Les données restent sur ton téléphone.</div>
+</div>
+<script>
+const defaultsTender = [
+  'Massage des pieds','Massage du dos','Bisou de 30 secondes','Petit-déjeuner au lit','Câlin de 5 minutes','Choisis le film ce soir','Soirée sans téléphone','Dessert préféré offert','Compliment sincère x3','Massage des mains','Temps calme ensemble 20 min','Chanson dédiée','Promenade main dans la main','Aide sur une corvée','Dîner choisi par toi','Grattage de tête','Bain préparé pour toi','Danse lente ensemble'
+];
+const defaultsSpicy = [
+  'Massage des pieds','Massage du dos','Bisou prolongé','Embrasse-moi dans le cou','Danse sensuelle 1 minute','Chuchote quelque chose de tendre','Câlin serré 2 minutes','Je choisis la musique du moment','Massage des mains','Regarde-moi dans les yeux 30 secondes','Fais-moi rire','Programme une surprise à deux'
+];
+const $ = (id)=>document.getElementById(id);
+const state = {
+  players:{a:'Toi',b:'Partenaire'}, turn:'a', mode:'tender',
+  customCards:[], history:[], drawn:null
+};
+function load(){
+  try{const raw=localStorage.getItem('coupleGameState'); if(raw){Object.assign(state, JSON.parse(raw));}}catch(e){}
+  $('playerA').value=state.players.a; $('playerB').value=state.players.b;
+}
+function save(){ try{localStorage.setItem('coupleGameState', JSON.stringify(state));}catch(e){} }
+function nowTime(){ return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+function currentPlayer(){ return state.players[state.turn]; }
+function partnerKey(){ return state.turn==='a'?'b':'a'; }
+function partnerPlayer(){ return state.players[partnerKey()]; }
+function activeDeck(){ return (state.mode==='spicy'?defaultsSpicy:defaultsTender).concat(state.customCards); }
+function setMode(mode){ state.mode=mode; $('modeTender').classList.toggle('active',mode==='tender'); $('modeSpicy').classList.toggle('active',mode==='spicy'); save(); render(); }
+function nextTurn(){ state.turn = state.turn==='a'?'b':'a'; state.drawn=null; save(); render(); }
+function resetAll(){ if(!confirm('Réinitialiser la partie et l’historique ?')) return; state.turn='a'; state.history=[]; state.drawn=null; save(); render(); }
+function addCard(){ const v=$('newCardInput').value.trim(); if(!v) return; state.customCards.unshift(v); $('newCardInput').value=''; save(); render(); }
+function removeCard(i){ state.customCards.splice(i,1); save(); render(); }
+function drawCard(){ const deck=activeDeck(); if(!deck.length) return; const action = deck[Math.floor(Math.random()*deck.length)]; const entry={id:Date.now()+Math.random(),receiver:currentPlayer(),giver:partnerPlayer(),action,done:false,createdAt:nowTime()}; state.drawn=entry; state.history.unshift(entry); save(); render(); }
+function markDone(){ if(!state.drawn) return; state.drawn.done=true; const hit=state.history.find(x=>x.id===state.drawn.id); if(hit) hit.done=true; save(); render(); }
+function renderCards(){
+  const list=$('cardList'); list.innerHTML='';
+  if(!state.customCards.length){ const d=document.createElement('div'); d.className='cardline'; d.innerHTML='<div class="txt muted">Aucune carte personnalisée pour l’instant.</div>'; list.appendChild(d); return; }
+  state.customCards.forEach((txt,i)=>{ const el=document.createElement('div'); el.className='cardline'; el.innerHTML=`<div class="txt"></div><button class="mini">Supprimer</button>`; el.querySelector('.txt').textContent=txt; el.querySelector('button').onclick=()=>removeCard(i); list.appendChild(el); });
+}
+function renderHistory(){
+  const box=$('historyList'); box.innerHTML='';
+  if(!state.history.length){ const el=document.createElement('div'); el.className='history-item'; el.innerHTML='<div class="muted">L’historique est vide.</div>'; box.appendChild(el); return; }
+  state.history.forEach(item=>{ const el=document.createElement('div'); el.className='history-item'; el.innerHTML=`<div class="flex space"><strong>${escapeHtml(item.receiver)}</strong><span class="badge">${item.done?'Réalisé':'En attente'}</span></div><div style="margin-top:8px;font-weight:700">${escapeHtml(item.action)}</div><div class="small" style="margin-top:6px">Offert par ${escapeHtml(item.giver)} • ${escapeHtml(item.createdAt)}</div>`; box.appendChild(el); });
+}
+function renderDrawn(){
+  const empty=$('drawnEmpty'), card=$('drawnCard');
+  if(!state.drawn){ empty.classList.remove('hidden'); card.classList.add('hidden'); return; }
+  empty.classList.add('hidden'); card.classList.remove('hidden');
+  $('drawnTime').textContent=state.drawn.createdAt; $('drawnStatus').textContent=state.drawn.done?'Réalisé':'À faire';
+  $('receiverName').textContent=state.drawn.receiver; $('receiverName2').textContent=state.drawn.receiver; $('giverName').textContent=state.drawn.giver; $('drawnAction').textContent='“'+state.drawn.action+'”';
+  $('doneBtn').style.display=state.drawn.done?'none':'inline-block';
+}
+function render(){
+  $('currentPlayer').textContent=currentPlayer(); $('partnerPlayer').textContent=partnerPlayer(); $('turnBadge').textContent='Tour : '+currentPlayer();
+  renderCards(); renderHistory(); renderDrawn();
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+$('playerA').addEventListener('input', e=>{ state.players.a=e.target.value.trim()||'Toi'; save(); render(); });
+$('playerB').addEventListener('input', e=>{ state.players.b=e.target.value.trim()||'Partenaire'; save(); render(); });
+$('modeTender').onclick=()=>setMode('tender'); $('modeSpicy').onclick=()=>setMode('spicy');
+$('drawBtn').onclick=drawCard; $('nextBtn').onclick=nextTurn; $('resetBtn').onclick=resetAll; $('doneBtn').onclick=markDone; $('addCardBtn').onclick=addCard;
+$('newCardInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addCard(); });
+load(); render();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./service-worker.js').catch(function(err){ console.log('SW registration failed', err); });
+  });
+}
+</script>
+
+</body>
+</html>
